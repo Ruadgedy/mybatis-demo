@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.dao.UserMapper">
+    <resultMap id="userMap" type="User">
+        <id column="id" property="id"/>
+        <result column="user_tel" property="telephone"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="registration_time" property="registeredDate"/>
+    </resultMap>
+
+<!--    如果是简单Pojo，不需要进行字段映射，则只是简单指定resultType即可，Mybatis会按照数据库列名和Pojo字段进行一一映射-->
+<!--    <select id="getUserById" parameterType="integer" resultType="com.demo.bean.User">-->
+<!--        select * from t_user where id=#{id}-->
+<!--    </select>-->
+
+<!--    如果是复杂Pojo，需要进行字段映射，则要使用后resultMap-->
+    <select id="getUserById" parameterType="integer" resultMap="userMap">
+        select * from t_user where id=#{id}
+    </select>
+
+    <select id="getAll" resultMap="userMap">
+        select * from t_user
+    </select>
+
+<!--    用别名代替，等价于 <insert id="insertUser" parameterType="com.demo.bean.User"> -->
+    <insert id="insertUser" parameterType="User">
+        <!--
+            将插入的数据主键返回到user对象中
+                keyProperty: 将查询到的主键设置到parameterType指定的哪个属性
+                select LAST_INSERT_ID(): 查询上一次执行insert操作返回的主键id，只适合于自增主键
+                resultType: 指定LAST_INSERT_ID()的结果类型
+                order: 相对于LAST_INSERT_ID()操作的顺序
+        -->
+        <selectKey keyProperty="id" resultType="integer" order="AFTER">
+            select last_insert_id()
+        </selectKey>
+        insert into t_user (id, user_tel, username, password, registration_time)
+            value (null,#{telephone},#{username},#{password},#{registrationTime})
+    </insert>
+
+    <delete id="deleteUserById" parameterType="integer">
+        delete from t_user where id=#{id}
+    </delete>
+
+    <update id="updateUserById" parameterType="User">
+        update t_user set user_tel=#{telephone}, username=#{username},
+            password=md5(#{password})
+        where id=#{id}
+    </update>
+
+<!--    动态查询-->
+    <select id="getUserBySelective" parameterType="User" resultMap="userMap">
+        select * from t_user
+        <where>
+            <if test="id >= 1">
+                id=#{id}
+            </if>
+            <if test="username != null">
+                and username like '%${username}%'
+            </if>
+        </where>
+    </select>
+
+<!--    动态更新. 一定要注意，update的动态语句，if条件之间要加入逗号。如果没有逗号则会出错-->
+    <update id="updateUserSelective" parameterType="User">
+        update t_user
+            <set>
+                <if test="telephone != null">
+                    user_tel=#{telephone},
+                </if>
+                <if test="username != null">
+                    username=#{username},
+                </if>
+                <if test="password!=null">
+                    password=md5(#{password})
+                </if>
+            </set>
+        where id=#{id}
+    </update>
+
+<!--    动态插入。需要注意的是，动态插入一般使用的都是trim。  下面的动态插入格式需要背下-->
+    <insert id="insertUserSelective" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        insert into t_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id!=null">
+                id,
+            </if>
+            <if test="telephone != null">
+                user_tel,
+            </if>
+            <if test="username != null">
+                username,
+            </if>
+            <if test="password != null">
+                password,
+            </if>
+            <if test="registrationTime != null">
+                registration_time,
+            </if>
+        </trim>
+        <trim prefix="values(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=INTEGER},
+            </if>
+            <if test="telephone != null">
+                #{telephone,jdbcType=VARCHAR},
+            </if>
+            <if test="username != null">
+                #{username, jdbcType=VARCHAR},
+            </if>
+            <if test="password != null">
+                #{password,jdbcType=VARCHAR},
+            </if>
+            <if test="registrationTime != null">
+                #{registrationTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </insert>
+
+<!--    复用的sql代码片段可以抽取出来，放入一个sql标签中-->
+    <sql id="insertCodeSnip">
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="id!=null">
+                id,
+            </if>
+            <if test="telephone != null">
+                user_tel,
+            </if>
+            <if test="username != null">
+                username,
+            </if>
+            <if test="password != null">
+                password,
+            </if>
+            <if test="registrationTime != null">
+                registration_time,
+            </if>
+        </trim>
+        <trim prefix="values(" suffix=")" suffixOverrides=",">
+            <if test="id != null">
+                #{id,jdbcType=INTEGER},
+            </if>
+            <if test="telephone != null">
+                #{telephone,jdbcType=VARCHAR},
+            </if>
+            <if test="username != null">
+                #{username, jdbcType=VARCHAR},
+            </if>
+            <if test="password != null">
+                #{password,jdbcType=VARCHAR},
+            </if>
+            <if test="registrationTime != null">
+                #{registrationTime,jdbcType=TIMESTAMP},
+            </if>
+        </trim>
+    </sql>
+    <!--  使用复用的代码片段  -->
+    <insert id="insertBySnip" parameterType="User" useGeneratedKeys="true" keyProperty="id">
+        insert into t_user
+        <include refid="insertCodeSnip">
+        </include>
+    </insert>
+
+    <select id="getUserByQueryIds" parameterType="QueryBean" resultMap="userMap">
+        select * from t_user
+        <where>
+<!--            第一种写法-->
+            <!--
+                collection: 指定输入对象的集合属性
+                item: 每次遍历生成的对象
+                open：开始遍历时的拼接字符串
+                close：结束时拼接的字符串
+                separator：遍历对象之间需要拼接的字符串
+
+                select * from t_user where (id=1 or id=4 or id=5 or id=8)
+            -->
+<!--            <foreach collection="ids" item="item" open="(" close=")" separator="or">-->
+<!--                id=#{item}-->
+<!--            </foreach>-->
+
+<!--            第二种写法-->
+<!--            select * from t_user where id in (1,4,5,8)-->
+            <foreach collection="ids" item="item" open="id in (" close=")" separator=",">
+                #{item}
+            </foreach>
+        </where>
+    </select>
+</mapper>

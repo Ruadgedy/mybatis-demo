@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.EmployeeMapper">
+
+    <cache eviction="FIFO" flushInterval="60000" readOnly="false" size="1024"/>
+    <sql id="empBaseColumn">
+        t_emp.emp_id,
+        t_emp.emp_name,
+        t_emp.emp_tel,
+        t_emp.emp_education,
+        t_emp.emp_birthday,
+        t_emp.fk_dept_id
+    </sql>
+
+    <sql id="deptBaseColumn">
+        t_dept.dept_id,
+        t_dept.dept_name,
+        t_dept.dept_info,
+        t_dept.dept_createDate
+    </sql>
+
+<!--    方法一：通过左连接，将员工表和部门表关联起来，然后将查询结果进行封装-->
+    <resultMap id="employeeMap" type="Employee">
+        <id column="emp_id" property="empId"/>
+        <result column="emp_name" property="empName"/>
+        <result column="emp_tel" property="empTel"/>
+        <result column="emp_education" property="empEducation"/>
+        <result column="emp_birthday" property="empBirthday"/>
+<!--        主要关联到一的那一端，就是用<association> -->
+        <association property="dept" javaType="com.demo.bean.Dept">
+            <id column="dept_id" property="deptId"/>
+            <result column="dept_name" property="deptName"/>
+            <result column="dept_info" property="deptInfo"/>
+            <result column="dept_createDate" property="deptCreateDate"/>
+        </association>
+    </resultMap>
+
+    <select id="getEmployeeById" resultMap="employeeMap" parameterType="integer">
+        select
+        <include refid="empBaseColumn"/>,
+        <include refid="deptBaseColumn"/>
+        from t_emp left join t_dept on t_emp.fk_dept_id = t_dept.dept_id
+        where emp_id=#{id}
+    </select>
+
+<!--    方法二：嵌套查询。先查询出员工相关的信息，然后再根据员工信息的外键查询部门信息，最后将两个查询结果组合成Employee对象-->
+    <resultMap id="employeeMap2" type="Employee">
+        <id column="emp_id" property="empId"/>
+        <result column="emp_name" property="empName"/>
+        <result column="emp_tel" property="empTel"/>
+        <result column="emp_education" property="empEducation"/>
+        <result column="emp_birthday" property="empBirthday"/>
+        <association property="dept" column="fk_dept_id" select="getDeptById"/>
+    </resultMap>
+    <resultMap id="deptMap" type="Dept">
+        <id column="dept_id" property="deptId"/>
+        <result column="dept_name" property="deptName"/>
+        <result column="dept_info" property="deptInfo"/>
+        <result column="dept_createDate" property="deptCreateDate"/>
+    </resultMap>
+
+<!--    根据emp_id查询到了dept_id,下面进行二次查询，二次查询出的结果也需要进行Pojo映射 -->
+    <select id="getDeptById" resultMap="deptMap" parameterType="integer">
+        select <include refid="deptBaseColumn"/>
+        from t_dept where dept_id=#{id}
+    </select>
+
+    <select id="getEmployeeById2" resultMap="employeeMap2" parameterType="integer">
+        select <include refid="empBaseColumn"/>
+        from t_emp where emp_id=#{id}
+    </select>
+
+</mapper>

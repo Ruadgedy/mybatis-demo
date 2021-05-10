@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <settings>
+<!--        全局性设置懒加载-->
+        <setting name="lazyLoadingEnabled" value="true"/>
+<!--        开启二级缓存-->
+        <setting name="cacheEnabled" value="true"/>
+    </settings>
+<!--    给mapper中的类型配置别名，有两种方法：1. 直接配置<package>标签 2. 单独为每个Pojo对象对象配置<typeAlias>标签-->
+    <typeAliases>
+<!--        为包下的所有的对象都配置了别名，默认映射方式为：com.demo.bean.User ==> User-->
+        <package name="com.demo.bean"/>
+<!--        为指定的每个Pojo对象配置单独的别名-->
+<!--        <typeAlias type="com.demo.bean.User" alias="user"/>-->
+    </typeAliases>
+
+    <environments default="development">
+<!--        配置数据库连接相关属性-->
+        <environment id="development">
+            <transactionManager type="JDBC"/>
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.cj.jdbc.Driver"/>
+                <property name="url" value="jdbc:mysql://127.0.0.1:3306/crm"/>
+                <property name="username" value="root"/>
+                <property name="password" value="Fyh123456!"/>
+            </dataSource>
+        </environment>
+    </environments>
+<!--    注册Mapper文件-->
+    <mappers>
+        <mapper resource="com/demo/mapper/UserMapper.xml"/>
+        <mapper resource="com/demo/mapper/EmployeeMapper.xml"/>
+        <mapper resource="com/demo/mapper/DeptMapper.xml"/>
+    </mappers>
+</configuration>

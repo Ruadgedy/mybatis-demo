@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.demo.mapper.DeptMapper">
+    <sql id="empBaseColumn">
+        t_emp.emp_id,
+        t_emp.emp_name,
+        t_emp.emp_tel,
+        t_emp.emp_education,
+        t_emp.emp_birthday,
+        t_emp.fk_dept_id
+    </sql>
+
+    <sql id="deptBaseColumn">
+        t_dept.dept_id,
+        t_dept.dept_name,
+        t_dept.dept_info,
+        t_dept.dept_createDate
+    </sql>
+
+    <resultMap id="deptMapper" type="Dept">
+        <id column="dept_id" property="deptId"/>
+        <result column="dept_name" property="deptName"/>
+        <result column="dept_info" property="deptInfo"/>
+        <result column="dept_createDate" property="deptCreateDate"/>
+        <collection property="employeeList" ofType="com.demo.bean.Employee">
+            <id column="emp_id" property="empId"/>
+            <result column="emp_name" property="empName"/>
+            <result column="emp_tel" property="empTel"/>
+            <result column="emp_education" property="empEducation"/>
+            <result column="emp_birthday" property="empBirthday"/>
+        </collection>
+    </resultMap>
+
+    <select id="getDept" resultMap="deptMapper">
+        select t_dept.dept_id,
+               t_dept.dept_name,
+               t_dept.dept_info,
+               t_dept.dept_createDate,
+               t_emp.emp_id,
+               t_emp.emp_name,
+               t_emp.emp_tel,
+               t_emp.emp_education,
+               t_emp.emp_birthday,
+               t_emp.fk_dept_id
+        from t_emp left join t_dept on t_emp.fk_dept_id = t_dept.dept_id
+    </select>
+
+    <update id="updateDeptByIdSelective" parameterType="Dept">
+        update t_dept
+        <trim prefix="set" suffixOverrides=",">
+            <if test="deptName != null">
+                dept_name=#{deptName},
+            </if>
+            <if test="deptInfo != null">
+                dept_info=#{deptInfo},
+            </if>
+            <if test="deptCreateDate != null">
+                dept_createDate=#{deptCreateDate},
+            </if>
+        </trim>
+        where dept_id=#{deptId}
+    </update>
+</mapper>
